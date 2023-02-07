@@ -22,11 +22,23 @@ const initializeDB = async () => {
   }
 };
 initializeDB();
+const convertDbObjectToResponseObject = (dbObject) => {
+  return {
+    playerId: dbObject.player_id,
+    playerName: dbObject.player_name,
+    jerseyNumber: dbObject.jersey_number,
+    role: dbObject.role,
+  };
+};
 
 app.get("/players/", async (request, response) => {
   const getPlayersQuery = `SELECT * FROM cricket_team ORDER BY player_id;`;
   const playersArray = await db.all(getPlayersQuery);
-  response.send(playersArray);
+  response.send(
+    playersArray.map((eachPlayer) =>
+      convertDbObjectToResponseObject(eachPlayer)
+    )
+  );
 });
 
 app.post("/players/", async (request, response) => {
@@ -38,15 +50,23 @@ app.post("/players/", async (request, response) => {
         '${playerName}', ${jerseyNumber}, '${role}');`;
   const dbResponse = await db.run(addPlayerQuery);
   const playerId = dbResponse.lastID;
-  response.send({ playerId: playerId });
   response.send("Player Added to Team");
 });
+
+const convertDbObjectToResponseObjects = (dbObject) => {
+  return {
+    playerId: dbObject.player_id,
+    playerName: dbObject.player_name,
+    jerseyNumber: dbObject.jersey_number,
+    role: dbObject.role,
+  };
+};
 
 app.get("/players/:playerId/", async (request, response) => {
   const { playerId } = request.params;
   const getPlayerQuery = `SELECT * FROM cricket_team WHERE player_id = ${playerId};`;
   const player = await db.get(getPlayerQuery);
-  response.send(player);
+  response.send(convertDbObjectToResponseObjects(player));
 });
 
 app.put("/players/:playerId/", async (request, response) => {
@@ -58,7 +78,7 @@ app.put("/players/:playerId/", async (request, response) => {
     jersey_number = ${jerseyNumber},
     role = '${role}' 
     WHERE player_id = ${playerId};`;
-  await db.run(updatePlayerQuery);
+  const updateArray = await db.run(updatePlayerQuery);
   response.send("Player Details Updated");
 });
 
@@ -68,3 +88,5 @@ app.delete("/players/:playerId/", async (request, response) => {
   await db.run(deletePlayerQuery);
   response.send("Player Removed");
 });
+
+module.exports = app;
